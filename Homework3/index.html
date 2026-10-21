@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>PocketLedger - Thearin - Homework 3</title>
+<style>*{box-sizing:border-box}body{margin:0;font-family:Arial,sans-serif;background:#f4f7fa;color:#203247}
+.shell{max-width:1180px;margin:auto;padding:26px}header{display:flex;justify-content:space-between;align-items:center;gap:20px;padding-bottom:20px;border-bottom:1px solid #dce4ec}
+.brand{display:flex;align-items:center;gap:12px;font-size:20px;font-weight:800}.brand-mark{width:43px;height:43px;display:grid;place-items:center;border-radius:13px;background:#235d8c;color:white}
+.owner{font-size:13px}.eyebrow{font-size:11px;letter-spacing:1.7px;font-weight:800;margin:0 0 12px}
+.page-intro{padding:38px 0 25px}.page-intro h1{font-size:clamp(30px,4vw,48px);letter-spacing:-1.7px;line-height:1.08;max-width:840px;margin:0 0 15px}
+.intro,.muted{font-size:14px;line-height:1.6;color:#65758a}.layout{display:grid;grid-template-columns:1.3fr 1fr;gap:23px}
+.hero,.result{padding:28px;border:1px solid #dde5ec;border-radius:20px;background:white}h2{font-size:26px;letter-spacing:-.6px;margin:0 0 15px}
+.fields{display:grid;grid-template-columns:1fr 1fr;gap:12px;align-items:end;margin:22px 0}
+label{display:block;font-size:12px;font-weight:700}input,select{display:block;width:100%;padding:12px;border:1px solid #ccd7e1;border-radius:9px;margin-top:7px;font:inherit;background:#fff;color:inherit}
+button{border:0;border-radius:9px;padding:13px 17px;background:#235d8c;color:white;font:inherit;font-size:13px;font-weight:700;cursor:pointer}
+button:hover{filter:brightness(.93)}button:focus-visible,input:focus-visible,select:focus-visible{outline:3px solid #e6b45e;outline-offset:3px}
+.secondary{background:#e9eef4!important;color:#34455b!important}.small{padding:8px 10px;font-size:11px;margin:2px}
+.huge{font-size:clamp(35px,5vw,59px);font-weight:800;letter-spacing:-2px;margin:22px 0}
+.note{padding:15px;border-radius:12px;font-size:13px;line-height:1.5;margin-top:25px;background:#f0f4f9}
+.list{list-style:none;padding:0;margin:20px 0}.list li{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid #d8e1e8}
+.list li>span:first-of-type{flex:1;overflow-wrap:anywhere}.list input[type=checkbox]{width:18px;margin:0}.progress{height:9px;background:#dfe8e3;border-radius:10px;overflow:hidden;margin:23px 0}
+.progress span{display:block;height:100%;width:0;background:#2b7660;transition:width .2s}.table-scroll{overflow-x:auto}
+.status{display:flex;flex-wrap:wrap;justify-content:space-between;gap:15px;background:#edf3f8;border:1px solid #dbe5ee;border-radius:13px;padding:14px 17px;margin-top:26px;font-size:12px}
+#version{font-family:monospace;font-weight:800}#release-note{margin:0}.status strong{font-size:12px}
+@media(max-width:800px){.layout{grid-template-columns:1fr!important}.fields{grid-template-columns:1fr!important}.shell{padding:18px}.hero,.result{padding:22px}header{align-items:flex-start}.owner{max-width:125px;text-align:right}.metrics{gap:6px!important}.metrics div{padding:12px!important}}
+
+body{background:#eff6f2;color:#183a31}.brand-mark{background:#1c7259;color:white}
+.layout{grid-template-columns:.85fr 1.3fr}.budget-result{background:#184e3f;color:#f0fff7;border-color:#184e3f}
+.budget-result .muted{color:#b9d7ca}.budget-result input{background:#ffffff15;color:#fff;border-color:#6f9c88}
+.budget-result .progress{background:#ffffff22}.budget-result .progress span{background:#c8df85}
+button{background:#1c7259;color:white}.fields{grid-template-columns:1.5fr 1fr auto}
+.status{background:#f7fcf9;border-color:#d1e4d8}.huge{letter-spacing:-2px}</style></head><body><div class="shell">
+<header><div class="brand"><span class="brand-mark">T</span>PocketLedger</div><div class="owner">Thearin / Homework 3</div></header>
+<section class="page-intro"><p class="eyebrow">PERSONAL FINANCE DEMO / MONTHLY VIEW</p><h1>Give your budget some breathing room.</h1><p class="intro">Keep a simple record of demo expenses and see what remains.</p></section>
+<main class="layout"><aside class="result budget-result"><p class="eyebrow">REMAINING BUDGET</p>
+<p class="huge" id="budget-remaining">$0.00</p><label>Budget (USD)<input id="budget-limit" type="number" min="0" step="0.01" value="100"></label>
+<div class="progress"><span id="budget-progress"></span></div><p id="budget-summary"></p>
+<p class="muted">Simple arithmetic demo. Data stays in this browser.</p></aside>
+<section class="hero"><p class="eyebrow">EXPENSE JOURNAL</p><h2>Small entries. Clear picture.</h2>
+<form id="expense-form" class="fields"><label>Description<input id="expense-name" maxlength="60" placeholder="Lunch" required></label>
+<label>Amount (USD)<input id="expense-amount" type="number" min="0.01" step="0.01" placeholder="5.00" required></label>
+<button type="submit">Add expense</button></form>
+<ul id="expense-list" class="list"></ul><button id="reset-expenses" class="secondary" type="button">Clear expenses</button></section></main>
+<footer class="status"><span><strong>Deployed version:</strong> <span id="version">Loading...</span></span><p id="release-note">First release.</p></footer>
+</div><script>
+'use strict';
+const $=id=>document.getElementById(id);
+function loadData(key,fallback){try{const value=localStorage.getItem(key);return value===null?fallback:JSON.parse(value);}catch(e){return fallback;}}
+function saveData(key,value){try{localStorage.setItem(key,JSON.stringify(value));}catch(e){}}
+let expenses=loadData('pocketledger-expenses',[]),budget=Number(loadData('pocketledger-budget',100));
+if(!Array.isArray(expenses))expenses=[];if(!Number.isFinite(budget)||budget<0)budget=100;
+$('budget-limit').value=budget;
+const money=n=>new Intl.NumberFormat('en-US',{style:'currency',currency:'USD'}).format(n);
+function renderBudget(){
+ const total=expenses.reduce((sum,x)=>sum+Number(x.amount),0);
+ $('budget-remaining').textContent=money(budget-total);
+ $('budget-summary').textContent=money(total)+' spent of '+money(budget);
+ $('budget-progress').style.width=(budget?Math.min(total/budget*100,100):total?100:0)+'%';
+ const ul=$('expense-list');ul.replaceChildren();
+ expenses.forEach((x,i)=>{
+  const li=document.createElement('li'),text=document.createElement('span'),amount=document.createElement('strong'),button=document.createElement('button');
+  text.textContent=x.name;amount.textContent=money(x.amount);button.textContent='Remove';button.type='button';button.className='small secondary';
+  button.addEventListener('click',()=>{expenses.splice(i,1);renderBudget();});
+  li.append(text,amount,button);ul.append(li);
+ });
+ saveData('pocketledger-expenses',expenses);saveData('pocketledger-budget',budget);
+}
+$('budget-limit').addEventListener('input',()=>{const n=Number($('budget-limit').value);if(Number.isFinite(n)&&n>=0){budget=n;renderBudget();}});
+$('expense-form').addEventListener('submit',e=>{
+ e.preventDefault();const name=$('expense-name').value.trim(),amount=Number($('expense-amount').value);
+ if(!name||!Number.isFinite(amount)||amount<=0)return;
+ expenses.push({name,amount});$('expense-name').value='';$('expense-amount').value='';renderBudget();
+});
+$('reset-expenses').addEventListener('click',()=>{expenses=[];renderBudget();});
+renderBudget();
+async function refreshVersion(){
+ try{const response=await fetch('/version.txt',{cache:'no-store'});
+ if(!response.ok)throw Error('version unavailable');
+ $('version').textContent=(await response.text()).trim();}
+ catch(e){$('version').textContent='Unavailable';}
+}
+refreshVersion();setInterval(refreshVersion,3000);
+</script></body></html>

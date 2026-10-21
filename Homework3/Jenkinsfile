@@ -1,0 +1,89 @@
+pipeline {
+  agent { label 'swarm-manager' }
+  options {
+    skipDefaultCheckout(true)
+    disableConcurrentBuilds()
+    timestamps()
+    timeout(time: 15, unit: 'MINUTES')
+    buildDiscarder(logRotator(numToKeepStr: '30'))
+  }
+  parameters {
+    choice(name: 'ACTION',
+      choices: ['release', 'build', 'push', 'deploy', 'rollback'],
+      description: 'release = build + push + deploy')
+    string(name: 'VERSION', defaultValue: '',
+      description: 'Blank uses this tag job; otherwise vMAJOR.MINOR.PATCH')
+  }
+  stages {
+    stage('Checkout') {
+      steps {
+        deleteDir()
+        checkout scm
+        script {
+          env.PROJECT_DIR = fileExists('Homework3/ci/pipeline.sh') ?
+                            'Homework3' : '.'
+          if (!fileExists(env.PROJECT_DIR + '/ci/pipeline.sh')) {
+            error('Project files not found. Check the SCM Script Path.')
+          }
+        }
+      }
+    }
+    stage('Resolve version') {
+      steps {
+        script {
+          env.DO_ACTION = params.ACTION ?: 'release'
+          env.VERSION = params.VERSION?.trim() ?: env.TAG_NAME
+          if (!env.TAG_NAME) {
+            error('This pipeline must be a discovered Git tag job.')
+          }
+          if (!(env.VERSION ==~ /^v[0-9]+[.][0-9]+[.][0-9]+$/)) {
+            error('VERSION must have the form vMAJOR.MINOR.PATCH.')
+          }
+          currentBuild.displayName = env.DO_ACTION + ' ' + env.VERSION
+        }
+        sh '''
+          git fetch origin 'refs/tags/*:refs/tags/*'
+          git checkout --detach "refs/tags/$VERSION"
+          git log -1 --oneline
+        '''
+      }
+    }
+    stage('Build') {
+      when {
+        expression { env.DO_ACTION in ['release', 'build', 'push'] }
+      }
+      steps { sh 'bash "$PROJECT_DIR/ci/pipeline.sh" build "$VERSION"' }
+    }
+    stage('Push to ECR') {
+      when {
+        expression { env.DO_ACTION in ['release', 'push'] }
+      }
+      steps { sh 'bash "$PROJECT_DIR/ci/pipeline.sh" push "$VERSION"' }
+    }
+    stage('Deploy or rollback') {
+      when {
+        expression { env.DO_ACTION in ['release', 'deploy', 'rollback'] }
+      }
+      steps {
+        script {
+          def action = env.DO_ACTION == 'rollback' ? 'rollback' : 'deploy'
+          withEnv(['DEPLOY_ACTION=' + action]) {
+            sh 'bash "$PROJECT_DIR/ci/pipeline.sh" "$DEPLOY_ACTION" "$VERSION"'
+          }
+        }
+      }
+    }
+    stage('Verify') {
+      when {
+        expression { env.DO_ACTION in ['release', 'deploy', 'rollback'] }
+      }
+      steps { sh 'bash "$PROJECT_DIR/ci/pipeline.sh" verify "$VERSION"' }
+    }
+  }
+  post {
+    success {
+      archiveArtifacts artifacts: env.PROJECT_DIR + '/deployment-*.txt',
+                       allowEmptyArchive: true, fingerprint: true
+    }
+  }
+}

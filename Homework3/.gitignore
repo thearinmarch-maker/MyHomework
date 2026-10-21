@@ -1,0 +1,11 @@
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.log
+.aws/
+.docker/
+.vscode/
+!screenshots/*.log
+deployment-*.txt
