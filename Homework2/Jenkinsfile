@@ -1,0 +1,55 @@
+pipeline {
+  agent { label 'swarm-manager' }
+  options {
+    skipDefaultCheckout(true)
+    disableConcurrentBuilds()
+    timestamps()
+    timeout(time: 15, unit: 'MINUTES')
+    buildDiscarder(logRotator(numToKeepStr: '30'))
+  }
+  triggers { githubPush() }
+  environment { DO_ACTION = 'release' }
+  stages {
+    stage('Checkout') {
+      steps {
+        deleteDir()
+        checkout scm
+        script {
+          env.PROJECT_DIR = fileExists('Homework2/ci/pipeline.sh') ?
+                            'Homework2' : '.'
+          if (!fileExists(env.PROJECT_DIR + '/ci/pipeline.sh')) {
+            error('Project files not found. Check the SCM Script Path.')
+          }
+        }
+      }
+    }
+    stage('Version') {
+      steps {
+        script {
+          def sha = sh(script: 'git rev-parse --short=12 HEAD',
+                       returnStdout: true).trim()
+          env.VERSION = 'build-' + env.BUILD_NUMBER + '-' + sha
+          currentBuild.displayName = env.VERSION
+        }
+      }
+    }
+    stage('Build') {
+      steps { sh 'bash "$PROJECT_DIR/ci/pipeline.sh" build "$VERSION"' }
+    }
+    stage('Push to ECR') {
+      steps { sh 'bash "$PROJECT_DIR/ci/pipeline.sh" push "$VERSION"' }
+    }
+    stage('Deploy') {
+      steps { sh 'bash "$PROJECT_DIR/ci/pipeline.sh" deploy "$VERSION"' }
+    }
+    stage('Verify') {
+      steps { sh 'bash "$PROJECT_DIR/ci/pipeline.sh" verify "$VERSION"' }
+    }
+  }
+  post {
+    success {
+      archiveArtifacts artifacts: env.PROJECT_DIR + '/deployment-*.txt',
+                       fingerprint: true
+    }
+  }
+}
