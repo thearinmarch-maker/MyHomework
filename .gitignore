@@ -1,0 +1,14 @@
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.log
+.aws/
+.docker/
+.vscode/
+
+deployment-*.txt
+
+# Optional local instruction PDF; actual reports remain trackable.
+/optional/*.pdf

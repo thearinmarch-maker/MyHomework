@@ -1,0 +1,48 @@
+IMPORTANT - WHAT TO ADD BEFORE YOUR GITHUB SUBMISSION
+
+For the GitHub repository, add your real screenshots, finished reports,
+and completed project details.
+
+WHAT TO ADD OR UPDATE
+
+1. Homework 2 screenshots
+   Location: Homework2/screenshots/
+
+2. Homework 3 screenshots
+   Location: Homework3/screenshots/
+
+3. Homework 2 finished report (1-2 pages)
+   Location: Homework2/reports/HW2_Report.pdf
+
+4. Homework 3 finished report (1-2 pages)
+   Location: Homework3/reports/HW3_Report.pdf
+
+5. Actual deployment dates, versions, and results
+   Location: each project's DEPLOYMENT_HISTORY.md
+
+6. Your name/student ID, live URLs, ECR details, and Jenkins build numbers
+   Location: root and project README.md files
+
+Replace the remaining placeholders, including YOUR_ACCOUNT_ID in both:
+  Homework2/aws/jenkins-ecr-policy.json
+  Homework3/aws/jenkins-ecr-policy.json
+
+GitHub should also show your merged pull request and these three release tags:
+  v1.0.0
+  v1.1.0
+  v1.1.1
+
+The application and pipeline source files are already included.
+
+THE SETUP INSTRUCTION PDF IS OPTIONAL
+
+The PDF is in optional/MyHomework_Two_Projects_Setup.pdf.
+It is your setup guide, not a completed homework report.
+You can keep it locally. The root .gitignore excludes optional/*.pdf,
+so normal git add commands do not upload that guide.
+SETUP.md contains the same numbered instructions in text form.
+Your actual HW2_Report.pdf and HW3_Report.pdf are not excluded.
+
+Use your own deployment, commit history, screenshots, reports, and results.
+The screenshot folders contain checklists, not completed evidence.
+Keep both deployed apps available through the teacher's grading window.
